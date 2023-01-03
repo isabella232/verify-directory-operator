@@ -127,6 +127,14 @@ The following make targets can be used:
     bundle-build:
         This target will build the OLM bundle image.
 
+You can deploy and run the image locally (without OLM) using the following
+commands:
+    1. make install
+    2. make run
+
+To tidy up the CRD's you can perform an uninstall using the following command:
+    1. make uninstall
+
 In order to deploy the image, using OLM, to a Kubernetes environment:
     1. operator-sdk olm install
     2. operator-sdk run bundle sec-isds-development-team-docker-local.artifactory.swg-devops.com/verify-directory-operator-bundle:\${VERSION} --pull-secret-name artifactory-login
