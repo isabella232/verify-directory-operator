@@ -1,0 +1,21 @@
+# Copyright contributors to the IBM Security Verify Directory Operator project
+
+domain: ibmcom
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: ibm-security-verify-directory-operator
+repo: github.com/ibm-security/verify-directory-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: com
+  group: ibm
+  kind: IBMSecurityVerifyDirectory
+  path: github.com/ibm-security/verify-directory-operator/api/v1
+  version: v1
+version: "3"

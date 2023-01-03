@@ -1,0 +1,20 @@
+# Copyright contributors to the IBM Security Verify Directory project
+
+# This YAML can be used to add the IBM Security Verify Directory operator 
+# catalog to the OpenShift environment.  The '--catalog-img--' text will need 
+# to be replaced with the name of the catalog image.
+
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: verify-directory-catalog
+  namespace: openshift-marketplace
+spec:
+  displayName: IBM Security Verify Directory
+  publisher: IBM
+  sourceType: grpc
+  image: --catalog-img--
+  updateStrategy:
+    registryPoll:
+      interval: 10m
+

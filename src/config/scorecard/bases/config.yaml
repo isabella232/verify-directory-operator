@@ -1,0 +1,9 @@
+# Copyright contributors to the IBM Security Verify Directory Operator project
+
+apiVersion: scorecard.operatorframework.io/v1alpha3
+kind: Configuration
+metadata:
+  name: config
+stages:
+- parallel: true
+  tests: []

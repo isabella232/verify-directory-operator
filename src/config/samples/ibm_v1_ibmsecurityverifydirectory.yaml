@@ -1,0 +1,14 @@
+# Copyright contributors to the IBM Security Verify Directory Operator project
+
+apiVersion: ibm.com/v1
+kind: IBMSecurityVerifyDirectory
+metadata:
+  labels:
+    app.kubernetes.io/name: ibmsecurityverifydirectory
+    app.kubernetes.io/instance: ibmsecurityverifydirectory-sample
+    app.kubernetes.io/part-of: verify-directory
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: verify-directory-operator
+  name: ibmsecurityverifydirectory-sample
+spec:
+  # TODO(user): Add fields here

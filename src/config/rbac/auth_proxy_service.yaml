@@ -1,0 +1,25 @@
+# Copyright contributors to the IBM Security Verify Directory Operator project
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: service
+    app.kubernetes.io/instance: controller-manager-metrics-service
+    app.kubernetes.io/component: kube-rbac-proxy
+    app.kubernetes.io/created-by: verify-directory-operator
+    app.kubernetes.io/part-of: verify-directory
+    app.kubernetes.io/managed-by: kustomize
+    app: ibm-security-verify-directory-operator
+  name: controller-manager-metrics-service
+  namespace: system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    control-plane: controller-manager
+    app: ibm-security-verify-directory-operator

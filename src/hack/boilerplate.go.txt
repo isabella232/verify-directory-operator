@@ -1,0 +1,4 @@
+/*
+ * Copyright contributors to the IBM Security Verify Directory Operator project
+ */
+

@@ -1,0 +1,35 @@
+# Copyright contributors to the IBM Security Verify Directory Operator project
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ibm.com
+  resources:
+  - ibmsecurityverifydirectories
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ibm.com
+  resources:
+  - ibmsecurityverifydirectories/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ibm.com
+  resources:
+  - ibmsecurityverifydirectories/status
+  verbs:
+  - get
+  - patch
+  - update
