@@ -11,4 +11,16 @@ metadata:
     app.kubernetes.io/created-by: verify-directory-operator
   name: ibmsecurityverifydirectory-sample
 spec:
-  # TODO(user): Add fields here
+  replicas:
+  - id:  replica-1
+    pvc: replica-1-pvc
+
+  pods:
+    serviceAccountName: isvd 
+    image: 
+      repo:    icr.io/isvd
+      label:   latest
+    configMap:
+      proxy:   isvd-proxy-config
+      server:  isvd-server-config
+

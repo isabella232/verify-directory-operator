@@ -8,34 +8,132 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// IBMSecurityVerifyDirectoryReplica defines details associated with a 
+// single directory server replica.
+type IBMSecurityVerifyDirectoryReplica struct {
+	// The unique identifier for the replica.  This will be used as the pod 
+	// name, and server identity.
+	Id string `json:"id"`
 
-// IBMSecurityVerifyDirectorySpec defines the desired state of IBMSecurityVerifyDirectory
-type IBMSecurityVerifyDirectorySpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// The name of the image which will be used in the deployment.
-	// Cannot be updated.
-	Image string `json:"image"`
-
-	// Foo is an example field of IBMSecurityVerifyDirectory. Edit ibmsecurityverifydirectory_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// The name of the persistent volume claim which will be used by the 
+	// replica.  Each replica must have its own PVC, and the PVC must be 
+	// pre-created.
+	PVC string `json:"pvc"`
 }
 
-// IBMSecurityVerifyDirectoryStatus defines the observed state of IBMSecurityVerifyDirectory
+// IBMSecurityVerifyDirectoryImage defines the details associated with the
+// docker images used by the operator.
+type IBMSecurityVerifyDirectoryImage struct {
+	//+kubebuilder:default=icr.io/isvd
+	// The repository which is used to store the Verify Directory images. 
+	// +optional
+	Repo string `json:"repo,omitempty"`
+
+	//+kubebuilder:default=latest
+	// The label of the Verify Directory images to be used. 
+	// +optional
+	Label string `json:"label,omitempty"`
+
+    // Image pull policy.
+    // One of Always, Never, IfNotPresent.
+    // Defaults to Always if :latest tag is specified, or IfNotPresent 
+    // otherwise.
+    // Cannot be updated.
+    // More info: https://kubernetes.io/docs/concepts/containers/images#updating-images
+    // +optional
+    ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty" protobuf:"bytes,14,opt,name=imagePullPolicy,casttype=PullPolicy"`
+
+	// ImagePullSecrets is an optional list of references to secrets in the same
+	// namespace to use for pulling any of the images used by this PodSpec.
+	// If specified, these secrets will be passed to individual puller 
+	// implementations for them to use. For example,
+	// in the case of docker, only DockerConfig type secrets are honored.
+    // More info: 
+    // https://kubernetes.io/docs/concepts/containers/images#specifying-imagepullsecrets-on-a-pod
+    // +optional
+    // +patchMergeKey=name
+    // +patchStrategy=merge
+    ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
+}
+
+// IBMSecurityVerifyDirectoryConfigMap defines the ConfigMaps which are used
+// by the server and proxy.
+type IBMSecurityVerifyDirectoryConfigMap struct {
+	// The name of the ConfigMap which contains the initial configuration data 
+	// for the proxy.  This should include everything but the definition of the 
+	// servers which are being proxied.
+	Proxy string `json:"proxy"`
+
+	// The name of the ConfigMap which contains the configuration data for the 
+	// server which is being managed/replicated.
+	Server string `json:"server"`
+}
+
+// IBMSecurityVerifyDirectoryPods defines details when creating the server
+// pods.
+type IBMSecurityVerifyDirectoryPods struct {
+	// Details associated with the docker images used by the operator.
+	// +optional
+	Image IBMSecurityVerifyDirectoryImage `json:"image,omitempty"`
+
+	// The configuration details for the proxy and server.
+	ConfigMap IBMSecurityVerifyDirectoryConfigMap `json:"configMap"`
+
+    // Compute Resources required by this container.
+    // Cannot be updated.
+    // More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+    // +optional
+    Resources corev1.ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
+
+    // List of sources to populate environment variables in the container.
+    // The keys defined within a source must be a C_IDENTIFIER. All invalid keys
+    // will be reported as an event when the container is starting. When a key 
+    // exists in multiple sources, the value associated with the last source 
+    // will take precedence.  Values defined by an Env with a duplicate key 
+    // will take precedence.
+    // Cannot be updated.
+    // +optional
+    EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
+
+    // List of environment variables to set in the container.
+    // Cannot be updated.
+    // +optional
+    // +patchMergeKey=name
+    // +patchStrategy=merge
+    Env []corev1.EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
+
+    // ServiceAccountName is the name of the ServiceAccount to use to run this
+	// pod.
+    // More info: 
+    // https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+    // +optional
+    ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,8,opt,name=serviceAccountName"`
+}
+
+// IBMSecurityVerifyDirectorySpec defines the desired state of 
+// IBMSecurityVerifyDirectory
+type IBMSecurityVerifyDirectorySpec struct {
+	// List of replicas for the environment.
+	Replicas []IBMSecurityVerifyDirectoryReplica `json:"replicas"`
+
+	// Details which are used when creating the server pods.
+	Pods IBMSecurityVerifyDirectoryPods `json:"pods"`
+}
+
+// IBMSecurityVerifyDirectoryStatus defines the observed state of 
+// IBMSecurityVerifyDirectory
 type IBMSecurityVerifyDirectoryStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+    Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// IBMSecurityVerifyDirectory is the Schema for the ibmsecurityverifydirectories API
+// IBMSecurityVerifyDirectory is the Schema for the 
+// ibmsecurityverifydirectories API
 type IBMSecurityVerifyDirectory struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
