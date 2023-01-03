@@ -284,13 +284,17 @@ catalog-push: ## Push a catalog image.
 docker-all: docker-build docker-push
 
 .PHONY: bundle-all
-bundle-all: bundle-build bundle-push
+bundle-all: bundle bundle-build bundle-push
 
 .PHONY: catalog-all
 catalog-all: catalog-build catalog-push
 
+.PHONY: full
+full: docker-all bundle-all catalog-all
+
+# Build everything.
 .PHONY: all
-all: docker-all bundle-all catalog-all
+all: build docker-build bundle bundle-build
 
 .PHONY: catalog-run
 catalog-run:
