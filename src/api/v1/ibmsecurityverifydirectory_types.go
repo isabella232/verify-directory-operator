@@ -64,7 +64,8 @@ type IBMSecurityVerifyDirectoryImage struct {
 type IBMSecurityVerifyDirectoryConfigMap struct {
 	// The name of the ConfigMap which contains the initial configuration data 
 	// for the proxy.  This should include everything but the definition of the 
-	// servers which are being proxied.
+	// server-groups and suffixes as these will be automatically added to the
+	// proxy configuration by the operator.
 	Proxy string `json:"proxy"`
 
 	// The name of the ConfigMap which contains the configuration data for the 
