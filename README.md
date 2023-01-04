@@ -102,7 +102,7 @@ At this point the IBM Security Verify Directory operator has been deployed and i
 
 ### Configuration
 
-Each directory server deployment requires two ConfigMaps, one to contain the configuration of the directory server, and another to contain the base configuration of the proxy.  
+Each directory server deployment requires two configuration files, one to contain the configuration of the directory server, and another to contain the base configuration of the proxy.  These configuration files must be contained within a Kubernetes ConfigMap.
 
 #### Server Configuration
 
@@ -250,15 +250,14 @@ metadata:
   name: isvd-server
 
 spec:
-  # Details associated with each directory server replica.  The id will 
-  # be used as the server and pod identifier, and the pvc refers to the
-  # pre-created Persistent Volume Claim which will be used to store the
-  # directory data for the replica.
+  # Details associated with each directory server replica.  The list of
+  # PVCs refers to th pre-created Persistent Volume Claims which will be 
+  # used to store the directory data for each replica.  Each replica must 
+  # have its own PVC.
   replicas:
-  - id:  replica-1
-    pvc: replica-1-pvc
-  - id:  replica-2
-    pvc: replica-2-pvc
+    pvcs:
+    - replica-1-pvc
+    - replica-2-pvc
     
   # Details associated with the pods which will be created by the
   # operator.
@@ -274,11 +273,14 @@ spec:
       repo:    icr.io/isvd
       label:   10.0.0.0
       
-    # The names of the ConfigMaps which store the server and proxy
-    # configuration.
+    # The ConfigMaps which store the server and proxy configuration.
     configMap:
-      proxy:   isvd-proxy-config
-      server:  isvd-server-config
+      proxy:   
+        name: isvd-proxy-config
+        key:  config.yaml
+      server:  
+        name: isvd-server-config
+        key:  config.yaml
 ```
 
 The following command can be used to create the deployment from this file:
@@ -293,14 +295,13 @@ The `IBMSecurityVerifyDirectory` custom resource definition contains the followi
 
 |Entry|Description|Default|Required?
 |-----|-----------|-------|---------
-|spec.replicas[].id|The unique identifier for the replica.  This will be used as the pod name, and server identity.| |Yes
-|spec.replicas[].pvc|The name of the persistent volume claim which will be used by the replica.  Each replica must have its own PVC, and the PVC must be pre-created.| |Yes
+|spec.replicas.pvcs[]|The names of the persistent volume claims which will be used by each replica.  Each replica must have its own PVC, and the PVC must be pre-created.| |Yes
 |spec.pods.image.repo|The repository which is used to store the Verify Directory images.|icr.io/isvd|No
 |spec.pods.image.label|The label of the Verify Directory images to be used. |latest|No
 |spec.pods.image.imagePullPolicy|The pull policy for the images.|'Always' if the latest label is specified, otherwise 'IfNotPresent'.|No
 |spec.pods.image.imagePullSecrets[]|A list of secrets which contain the credentials, used to access the images.| |No
-|spec.pods.configMap.proxy|The initial configuration data for the proxy.  This should include everything but the proxy.server-groups and proxy.suffixes entries.| |Yes
-|spec.pods.configMap.server|The configuration data for the server which is being managed/replicated.| |Yes
+|spec.pods.configMap.proxy.name spec.pods.configMap.proxy.key|The name and key of the ConfigMap which contains the initial configuration data for the proxy.  This should include everything but the proxy.server-groups and proxy.suffixes entries.| |Yes
+|spec.pods.configMap.server.name spec.pods.configMap.server.key|The name and key of the ConfigMap which contains the configuration data for the server which is being managed/replicated.| |Yes
 |spec.pods.resources|The compute resources required by each pod.  Further information can be found at [https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/]().| |No
 |spec.pods.envFrom[]|A list of sources to populate environment variables in the container.  Further information can be found at [https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/]().| |No
 |spec.pods.env[]|A list of environment variables to be added to the pods.  Further information can be found at [https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/]().| |No
@@ -330,3 +331,5 @@ spec:
     app: isvd-server
   type: NodePort
 ```
+
+The server replicas will communicate with each other, and the proxy, using `ClusterIP` services.  These services will be automatically created by the operator.  Please note that if the LDAP port is enabled this will be used for communication.  If LDAPS is being used the server and proxy configurations must  

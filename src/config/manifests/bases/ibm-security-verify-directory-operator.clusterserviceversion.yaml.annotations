@@ -3,7 +3,7 @@
         name: ''
         version: v1
       specDescriptors:
-      - description: The list of server replicas for the environment.
+      - description: Details of the server replicas within the environment.
         displayName: Replicas
         path: replicas
         x-descriptors:

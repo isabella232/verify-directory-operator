@@ -14,14 +14,10 @@ import (
 // IBMSecurityVerifyDirectoryReplica defines details associated with a 
 // single directory server replica.
 type IBMSecurityVerifyDirectoryReplica struct {
-	// The unique identifier for the replica.  This will be used as the pod 
-	// name, and server identity.
-	Id string `json:"id"`
-
-	// The name of the persistent volume claim which will be used by the 
+	// A list of persistent volume claims which will be used by the 
 	// replica.  Each replica must have its own PVC, and the PVC must be 
 	// pre-created.
-	PVC string `json:"pvc"`
+	PVCs []string `json:"pvcs"`
 }
 
 // IBMSecurityVerifyDirectoryImage defines the details associated with the
@@ -59,18 +55,28 @@ type IBMSecurityVerifyDirectoryImage struct {
     ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,15,rep,name=imagePullSecrets"`
 }
 
+// IBMSecurityVerifyDirectoryConfigMapEntry defines the information required
+// for a ConfigMap configuration.
+type IBMSecurityVerifyDirectoryConfigMapEntry struct {
+	// The name of the ConfigMap which contains the configuration data.
+	Name string `json:"name"`
+
+	// The key within the ConfigMap which contains the configuration data.
+	Key string `json:"key"`
+}
+
 // IBMSecurityVerifyDirectoryConfigMap defines the ConfigMaps which are used
 // by the server and proxy.
 type IBMSecurityVerifyDirectoryConfigMap struct {
-	// The name of the ConfigMap which contains the initial configuration data 
-	// for the proxy.  This should include everything but the definition of the 
+	// The ConfigMap which contains the initial configuration data for the 
+	// proxy.  This should include everything but the definition of the 
 	// server-groups and suffixes as these will be automatically added to the
 	// proxy configuration by the operator.
-	Proxy string `json:"proxy"`
+	Proxy IBMSecurityVerifyDirectoryConfigMapEntry `json:"proxy"`
 
-	// The name of the ConfigMap which contains the configuration data for the 
-	// server which is being managed/replicated.
-	Server string `json:"server"`
+	// The ConfigMap which contains the configuration data for the server 
+	// which is being managed/replicated.
+	Server IBMSecurityVerifyDirectoryConfigMapEntry `json:"server"`
 }
 
 // IBMSecurityVerifyDirectoryPods defines details when creating the server
@@ -117,8 +123,8 @@ type IBMSecurityVerifyDirectoryPods struct {
 // IBMSecurityVerifyDirectorySpec defines the desired state of 
 // IBMSecurityVerifyDirectory
 type IBMSecurityVerifyDirectorySpec struct {
-	// List of replicas for the environment.
-	Replicas []IBMSecurityVerifyDirectoryReplica `json:"replicas"`
+	// Details of the server replicas within the environment.
+	Replicas IBMSecurityVerifyDirectoryReplica `json:"replicas"`
 
 	// Details which are used when creating the server pods.
 	Pods IBMSecurityVerifyDirectoryPods `json:"pods"`

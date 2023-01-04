@@ -12,8 +12,8 @@ metadata:
   name: ibmsecurityverifydirectory-sample
 spec:
   replicas:
-  - id:  replica-1
-    pvc: replica-1-pvc
+    pvcs: 
+    - replica-1-pvc
 
   pods:
     serviceAccountName: isvd 
@@ -21,6 +21,10 @@ spec:
       repo:    icr.io/isvd
       label:   latest
     configMap:
-      proxy:   isvd-proxy-config
-      server:  isvd-server-config
+      proxy:   
+        name: isvd-proxy-config
+        key:  config.yaml
+      server:  
+        name: isvd-server-config
+        key:  config.yaml
 
