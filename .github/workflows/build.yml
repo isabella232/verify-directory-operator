@@ -138,7 +138,7 @@ jobs:
               export DO_PUSH=1
               ;;
             *)
-              export IMAGE_TAG_BASE=docker.io/${ARTIFACTORY_SERVER}/verify-directory-operator
+              export IMAGE_TAG_BASE=${ARTIFACTORY_SERVER}/verify-directory-operator
               export VERSION=0.0.0
 
               if [ $GITHUB_REF = "refs/heads/master" ] ; then
@@ -196,3 +196,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           /usr/bin/docker logout icr.io
+
+      # Delete the Kubernetes cluster.
+      - name: Delete Kubernetes cluster
+        run: |
+          kind delete cluster 
