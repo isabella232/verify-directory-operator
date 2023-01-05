@@ -165,6 +165,12 @@ jobs:
           operator-sdk scorecard bundle -w 300s
 
           if [ $DO_PUSH -eq 1 ] ; then
+            case $GITHUB_REF in 
+              refs/tags/v*)
+                ibmcloud cr login --client docker
+                ;;
+            esac
+
             echo "make docker-push....."
             make docker-push
 
