@@ -197,6 +197,8 @@ jobs:
         run: |
           /usr/bin/docker logout icr.io
 
+          ibmcloud logout
+
       # Delete the Kubernetes cluster.
       - name: Delete Kubernetes cluster
         run: |
