@@ -100,7 +100,7 @@ jobs:
           ibmcloud login --apikey ${API_KEY} \
                 -a https://cloud.ibm.com -r us-south
 
-          ibmcloud cr login
+          ibmcloud cr login --client docker
           ibmcloud cr region-set global
 
       # Perform a docker login to artifactory.
