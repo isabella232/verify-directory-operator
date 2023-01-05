@@ -194,8 +194,6 @@ jobs:
           files: |
             bundle.zip
             bundle.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
       # Perform a docker logout from ICR.
       - name: Logout from ICR
