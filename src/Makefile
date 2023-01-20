@@ -121,7 +121,7 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+	go run ./main.go $(ARGS) --zap-devel
 
 # If you wish built the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
@@ -309,4 +309,9 @@ catalog-run:
 catalog-cleanup:
 	sed "s|--catalog-img--|$(CATALOG_IMG)|g" test/catalog.yaml \
             | kubectl delete -f -
+
+.PHONY: certs
+certs:
+	mkdir -p /tmp/k8s-webhook-server/serving-certs
+	cp test/certs/* /tmp/k8s-webhook-server/serving-certs/
 

@@ -3,23 +3,18 @@
 apiVersion: ibm.com/v1
 kind: IBMSecurityVerifyDirectory
 metadata:
-  labels:
-    app.kubernetes.io/name: ibmsecurityverifydirectory
-    app.kubernetes.io/instance: ibmsecurityverifydirectory-sample
-    app.kubernetes.io/part-of: verify-directory
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: verify-directory-operator
   name: ibmsecurityverifydirectory-sample
 spec:
   replicas:
     pvcs: 
-    - replica-1-pvc
+    - replica-1
+    - replica-2
 
   pods:
-    serviceAccountName: isvd 
     image: 
-      repo:    icr.io/isvd
-      label:   latest
+      repo:            icr.io/isvd
+      label:           latest
+
     configMap:
       proxy:   
         name: isvd-proxy-config
@@ -27,4 +22,6 @@ spec:
       server:  
         name: isvd-server-config
         key:  config.yaml
+
+    serviceAccountName: isvd 
 

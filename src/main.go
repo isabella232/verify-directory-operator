@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	ibmv1 "github.com/ibm-security/verify-directory-operator/api/v1"
+	"github.com/ibm-security/verify-directory-operator/utils"
 	"github.com/ibm-security/verify-directory-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -48,7 +49,7 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	opts := zap.Options{
-		Development: true,
+		Development: false,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
@@ -79,12 +80,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	utils.K8sClient = mgr.GetClient()
+
 	if err = (&controllers.IBMSecurityVerifyDirectoryReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("IBMSecurityVerifyDirectory"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMSecurityVerifyDirectory")
+		os.Exit(1)
+	}
+	if err = (&ibmv1.IBMSecurityVerifyDirectory{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMSecurityVerifyDirectory")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
