@@ -1,6 +1,6 @@
 # Building
 
-A container image has been created which encapsulates the required build environment for the operator.  For further information on how to create and use the build container refer to the [build/README.md]() file.
+A container image has been created which encapsulates the required build environment for the operator.  For further information on how to create and use the build container refer to the [build/README.md](build/README.md) file.
 
 # Testing
 
@@ -9,7 +9,7 @@ A container image has been created which encapsulates the required build environ
 In order to test a development version of the operator the following pre-requisites must be met:
 
 1. You first need to ensure that you have access to a Kubernetes environment and the kubectl context has been set for this environment.  
-2. The `operator-sdk` must be installed.  Information on how to install the `operator-sdk` is available at: [ https://sdk.operatorframework.io/docs/installation/]().
+2. The `operator-sdk` must be installed.  Information on how to install the `operator-sdk` is available at: [https://sdk.operatorframework.io/docs/installation/](https://sdk.operatorframework.io/docs/installation/).
 3. The operator lifecycle management (OLM) tool must be installed into the Kubernetes cluster which is being used for testing.  This can be achieved by executing the following operator-sdk command:
 
 	```
