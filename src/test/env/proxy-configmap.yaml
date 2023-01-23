@@ -1,19 +1,18 @@
 # Copyright contributors to the IBM Security Verify Directory project.
 
 #
-# Create the ConfigMap for the deployment.
+# Create the ConfigMap for the proxy.
 #
 
 apiVersion: v1 
 kind: ConfigMap 
 metadata: 
-  name: isvd-server-config
+  name: isvd-proxy-config
   namespace: default 
 data: 
   config.yaml: | 
     general: 
-      ports:
-        ldap: 9389
+      id: isvd-proxy
 
       json-logging: false
 
@@ -25,16 +24,9 @@ data:
 
       admin: 
         dn: cn=root
-        pwd: passw0rd1
+        pwd: secret:isvd-secret/admin-password
 
-    server:
-      replication:
-        admin:
-          dn: cn=replcred
-          pwd: passw0rd2
-
-      suffixes:
-        - dn: o=sample
-          object-classes:
-          - organization
+    keyfile:
+      trusted-certificates:
+      - secret:isvd-secret/server-cert
 
