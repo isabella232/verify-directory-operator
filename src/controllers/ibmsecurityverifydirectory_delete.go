@@ -23,6 +23,7 @@ import (
 	"github.com/ibm-security/verify-directory-operator/utils"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 /*****************************************************************************/
@@ -77,7 +78,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) deleteReplicas(
 		 * Delete the pod and service.
 		 */
 
-		err = r.deleteReplica(h, pvcName, false)
+		err = r.deleteReplica(h, pvcName)
 
 		if err != nil {
 			return
@@ -94,13 +95,12 @@ func (r *IBMSecurityVerifyDirectoryReconciler) deleteReplicas(
  */
 
 func (r *IBMSecurityVerifyDirectoryReconciler) deleteReplica(
-			h          *RequestHandle,
-			pvcName    string,
-			waitOnPod  bool) (err error)  {
+			h       *RequestHandle,
+			pvcName string) (err error)  {
 
 	r.Log.V(1).Info("Entering a function", 
 				r.createLogParams(h, "Function", "deleteReplica",
-						"PVC.Name", pvcName, "Waiting", waitOnPod)...)	
+						"PVC.Name", pvcName)...)	
 
 	podName := r.getReplicaPodName(h.directory, pvcName)
 
@@ -120,7 +120,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) deleteReplica(
 
 	err = r.Delete(h.ctx, service)
 
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return 
 	}
 
@@ -140,28 +140,26 @@ func (r *IBMSecurityVerifyDirectoryReconciler) deleteReplica(
 
 	err = r.Delete(h.ctx, pod)
 
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		return 
 	}
 
-	if waitOnPod {
-		/*
-		 * Wait for the pod to stop.
-		 */
+	/*
+	 * Wait for the pod to stop.
+	 */
 
-		r.Log.Info("Waiting for the pod to stop", 
+	r.Log.Info("Waiting for the pod to stop", 
 					r.createLogParams(h, "Pod.Name", podName)...)
 
-		err = wait.PollImmediate(time.Second, time.Duration(300) * time.Second, 
+	err = wait.PollImmediate(time.Second, time.Duration(300) * time.Second, 
 					r.isPodOpComplete(h, podName, false))
 
-		if err != nil {
-			r.Log.Error(err, 
-				"The pod failed to stop within the allocated time.",
-				r.createLogParams(h, "Pod.Name", podName)...)
+	if err != nil {
+		r.Log.Error(err, 
+			"The pod failed to stop within the allocated time.",
+			r.createLogParams(h, "Pod.Name", podName)...)
 
-			return
-		}
+		return
 	}
 
 	return

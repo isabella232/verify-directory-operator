@@ -137,7 +137,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 	 * Stop the principal.
 	 */
 
-	err = r.deleteReplica(h, principal, true)
+	err = r.deleteReplica(h, principal)
 
 	if err != nil {
 		h.requeueOnError = false
