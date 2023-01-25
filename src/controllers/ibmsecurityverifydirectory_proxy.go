@@ -145,8 +145,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getProxyJson(
  		r.Log.Error(err, "Failed to load the ConfigMap data",
 						r.createLogParams(h, "ConfigMap.Name", name,
 								"ConfigMap.Key", key)...)
-		h.requeueOnError = false
-
 		return
 	}
 
@@ -175,8 +173,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getProxyJson(
 						r.createLogParams(h, "ConfigMap.Name", name,
 								"ConfigMap.Key", key)...)
 
-		h.requeueOnError = false
-
 		return 
 	}
 
@@ -184,8 +180,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getProxyJson(
 	body, ok := body.(map[string]interface{})
 
 	if ! ok {
-		h.requeueOnError = false
-		
 		err = errors.New("The server configuration cannot be parsed.")
 
 		return
@@ -201,8 +195,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getProxyJson(
 		iport, ok := ldap.(int)
 
 		if ! ok {
-			h.requeueOnError = false
-
 			err = errors.New(
 						"The general.ports.ldap configuration is incorrect.")
 
@@ -230,8 +222,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getProxyJson(
 				iport, ok := ldaps.(int)
 
 				if ! ok {
-					h.requeueOnError = false
-
 					err = errors.New(
 						"The general.ports.ldaps configuration is incorrect.")
 
@@ -271,8 +261,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) constructProxyYaml(
 			r.createLogParams(h, 
 				"ConfigMap.Name", h.directory.Spec.Pods.ConfigMap.Proxy.Name,
 				"ConfigMap.Key", h.directory.Spec.Pods.ConfigMap.Proxy.Key)...)
-
-		h.requeueOnError = false
 
 		return
 	}
@@ -404,8 +392,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) constructProxyYaml(
 			r.createLogParams(h, 
 				"ConfigMap.Name", h.directory.Spec.Pods.ConfigMap.Proxy.Name,
 				"ConfigMap.Key", h.directory.Spec.Pods.ConfigMap.Proxy.Key)...)
-
-		h.requeueOnError = false
 
 		return
 	}

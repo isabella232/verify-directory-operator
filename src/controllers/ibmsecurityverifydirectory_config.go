@@ -69,7 +69,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 
     var body interface{}
     if err := yaml.Unmarshal([]byte(config.Data[key]), &body); err != nil {
-		h.requeueOnError = false
 		return err
     }
 
@@ -77,8 +76,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 	body, ok := body.(map[string]interface{})
 
 	if ! ok {
-		h.requeueOnError = false
-		
 		err = errors.New("The server configuration cannot be parsed.")
 
 		r.Log.Error(err, "Failed to unmarshal the ConfigMap data.",
@@ -108,8 +105,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 		iport, ok := ldap.(int)
 
 		if ! ok {
-			h.requeueOnError = false
-
 			err = errors.New(
 						"The general.ports.ldap configuration is incorrect.")
 
@@ -142,8 +137,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 				iport, ok := ldaps.(int)
 
 				if ! ok {
-					h.requeueOnError = false
-
 					err = errors.New(
 						"The general.ports.ldaps configuration is incorrect.")
 
@@ -171,8 +164,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 				r.createLogParams(h, "License.Key", licenseKey)...)
 
 	if licenseKey == nil {
-		h.requeueOnError = false
-
 		err = errors.New("The general.license.key configuration is missing.")
 
 		r.Log.Error(err, "Failed to process the ConfigMap data.",
@@ -208,8 +199,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 									false, h.directory.Namespace)
 
 	if adminPwd == nil {
-		h.requeueOnError = false
-
 		err = errors.New("The general.admin.pwd configuration is missing.")
 
 		r.Log.Error(err, "Failed to process the ConfigMap data.",
@@ -230,8 +219,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) getServerConfig(
 	h.config.suffixes, err = r.getConfigSuffixes(h, body, h.directory.Namespace)
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return err
 	}
 

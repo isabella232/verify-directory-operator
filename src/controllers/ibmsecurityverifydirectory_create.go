@@ -84,24 +84,18 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		pod, err = r.deployReplica(h, principal)
 
 		if err != nil {
-			h.requeueOnError = false
-			
 			return nil, err
 		}
 
 		err = r.createClusterService(h, pod, h.config.port, principal)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return nil, err
 		}
 
 		err = r.waitForPod(h, pod)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return nil, err
 		}
 
@@ -127,8 +121,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 					h, principal, principal, pvcName)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return nil, err
 		}
 	}
@@ -140,8 +132,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 	err = r.deleteReplica(h, principal)
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return nil, err
 	}
 
@@ -159,8 +149,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 			ConfigMapKey, "seed: \n  replica: \n    clean: true\n")
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return nil, err
 	}
 
@@ -173,8 +161,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		err = r.seedReplica(h, principal, pvcName)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			r.deleteConfigMap(h, seedConfigMapName)
 
 			return nil, err
@@ -185,8 +171,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		err = r.waitForJob(h, r.getSeedJobName(h.directory, pvcName))
 
 		if err != nil {
-			h.requeueOnError = false
-
 			r.deleteConfigMap(h, seedConfigMapName)
 
 			return nil, err
@@ -212,8 +196,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		podName, err = r.deployReplica(h, pvcName)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return nil, err
 		}
 
@@ -225,8 +207,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		err = r.waitForPod(h, podName)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return nil, err
 		}
 	}
@@ -240,8 +220,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		err = r.createReplicationAgreements(h, principal, pvcName, existing)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return nil, err
 		}
 	}
@@ -254,8 +232,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 		err = r.createClusterService(h, podName, h.config.port, pvcName)
 
 		if err != nil {
-			h.requeueOnError = false
-
 			return  nil, err
 		}
 	}
@@ -267,24 +243,18 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createReplicas(
 	principalPod, err := r.deployReplica(h, principal)
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return nil, err
 	}
 
 	err = r.createClusterService(h, principalPod, h.config.port, principal)
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return  nil, err
 	}
 
 	err = r.waitForPod(h, principalPod)
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return nil, err
 	}
 

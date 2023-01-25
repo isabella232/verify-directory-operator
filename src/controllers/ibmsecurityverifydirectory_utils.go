@@ -163,8 +163,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) deleteConfigMap(
 	err = r.Delete(h.ctx, configMap)
 
 	if err != nil {
-		h.requeueOnError = false
-
 		return 
 	}
 
@@ -258,6 +256,12 @@ func (r *IBMSecurityVerifyDirectoryReconciler) isPodOpComplete(
 				if pod.Status.ContainerStatuses[0].Ready {
 					return true, nil
 				}
+
+				if pod.Status.ContainerStatuses[0].RestartCount > 3 {
+					return true, 
+						errors.New("The pod has been restarted too many times.")
+				}
+
 			case corev1.PodFailed, corev1.PodSucceeded:
 				return true, errors.New("The pod is no longer running")
 		}
@@ -287,6 +291,9 @@ func (r *IBMSecurityVerifyDirectoryReconciler) waitForPod(
  		r.Log.Error(err, 
 				"The pod failed to become ready within the allocated time.",
 				r.createLogParams(h, "Pod.Name", name)...)
+
+		err = errors.New(fmt.Sprintf("The pod, %s, failed to become ready " +
+				"within the allocated time.", name))
 
 		return 
 	}

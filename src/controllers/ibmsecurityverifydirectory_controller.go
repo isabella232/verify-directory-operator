@@ -20,6 +20,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/go-logr/logr"
 	"github.com/ibm-security/verify-directory-operator/utils"
@@ -86,11 +87,10 @@ type ServerConfig struct {
  */
 
 type RequestHandle struct {
-	ctx            context.Context
-	req            ctrl.Request
-	directory      *ibmv1.IBMSecurityVerifyDirectory
-	requeueOnError bool
-	config         ServerConfig
+	ctx       context.Context
+	req       ctrl.Request
+	directory *ibmv1.IBMSecurityVerifyDirectory
+	config    ServerConfig
 }
 
 /*****************************************************************************/
@@ -115,7 +115,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		ctx:            ctx,
 		req:            req,
 		directory:      &ibmv1.IBMSecurityVerifyDirectory{},
-		requeueOnError: true,
 	}
 
 	r.Log.V(1).Info("Entering a function", 
@@ -149,11 +148,21 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 					r.createLogParams(&h)...)
 		}
 
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	r.Log.V(1).Info("Reconciling a document", 
 				r.createLogParams(&h, "Document", h.directory)...)
+
+	/*
+	 * Check to see whether the document is currently in the failing state.
+	 * We don't allow documents to be updated when they are in the failing
+	 * state.
+	 */
+
+	if meta.IsStatusConditionFalse(h.directory.Status.Conditions, "Available") {
+		return ctrl.Result{}, nil
+	}
 
 	/*
 	 * Retrieve the list of existing pods for the deployment.
@@ -165,7 +174,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.setCondition(err, &h,
 							"Failed to retrieve the list of existing pods.")
 
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	r.Log.Info("Existing pods", r.createLogParams(&h, "Pods", existing)...)
@@ -203,7 +212,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.Log.Error(err, "Failed to update the condition for the resource",
 						r.createLogParams(&h)...)
 	
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	/*
@@ -216,7 +225,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.setCondition(err, &h,
 			"Failed to obtain the server information from the ConfigMap.")
 
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	/*
@@ -229,7 +238,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.setCondition(err, &h,
 					"Failed to create the new replicas.")
 
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	/*
@@ -242,7 +251,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 	if err != nil {
 		r.setCondition(err, &h, "Failed to deploy the proxy.")
 
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	/*
@@ -254,7 +263,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 	if err != nil {
 		r.setCondition(err, &h, "Failed to delete the obsolete replicas.")
 
-		return ctrl.Result{}, r.reconcileError(&h, err)
+		return ctrl.Result{}, err
 	}
 
 	/*
@@ -265,25 +274,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 
 	r.setCondition(err, &h, "")
 
-	return ctrl.Result{}, r.reconcileError(&h, err)
-}
-
-/*****************************************************************************/
-
-/*
- * The following function will return the specified error if the requeue
- * capability is requested, otherwise it will return nil.
- */
-
-func (r *IBMSecurityVerifyDirectoryReconciler) reconcileError(
-				h   *RequestHandle,
-				err error) (error) {
-
-	if h.requeueOnError {
-		return err
-	} else {
-		return nil
-	}
+	return ctrl.Result{}, err
 }
 
 /*****************************************************************************/
@@ -467,6 +458,9 @@ func (r *IBMSecurityVerifyDirectoryReconciler) SetupWithManager(
 							mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ibmv1.IBMSecurityVerifyDirectory{}).
+		WithEventFilter(predicate.Or(
+				predicate.GenerationChangedPredicate{}, 
+				predicate.LabelChangedPredicate{})).
 		Complete(r)
 }
 
