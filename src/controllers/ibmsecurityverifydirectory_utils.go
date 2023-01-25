@@ -424,6 +424,13 @@ func (r *IBMSecurityVerifyDirectoryReconciler) executeCommand(
 	 * Construct the request.
 	 */
 
+	option := &corev1.PodExecOptions{
+		Command:   command,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       true,
+	}
+
 	request := kubeClient.
 		CoreV1().
 		RESTClient().
@@ -432,12 +439,8 @@ func (r *IBMSecurityVerifyDirectoryReconciler) executeCommand(
 		Namespace(h.directory.Namespace).
 		Name(pod).
 		SubResource("exec").
-		VersionedParams(&corev1.PodExecOptions{
-			Command:   command,
-			Stdout:    true,
-			Stderr:    true,
-			TTY:       true,
-		}, scheme.ParameterCodec)
+		VersionedParams(option, scheme.ParameterCodec).Timeout(
+								120 * time.Second)
 
 	/*
 	 * Execute the command.

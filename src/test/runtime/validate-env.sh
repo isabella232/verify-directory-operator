@@ -96,7 +96,7 @@ echo "Checking the $suffix suffix of each individual server...."
 baseline=`kubectl exec -it $proxy -- idsldapsearch -h 127.0.0.1 \
         -p $port -D $admin_dn -w $admin_pwd \
         -b $suffix \
-        "(objectclass=inetOrgPerson)" dn | tr -d '\r' | awk 'NF'`
+        "(objectclass=inetOrgPerson)" dn | tr -d '\r' | awk 'NF' | sort`
 
 if [ ! -z "$verbose" ] ; then
     echo "Baseline:"
@@ -109,7 +109,7 @@ for server in $servers; do
     data=`kubectl exec -it $server -- idsldapsearch -h 127.0.0.1 \
         -p $replica_port $replica_args -D $admin_dn -w $admin_pwd \
         -b $suffix \
-        "(objectclass=inetOrgPerson)" dn | tr -d '\r' | awk 'NF'`
+        "(objectclass=inetOrgPerson)" dn | tr -d '\r' | awk 'NF' | sort`
 
     if [ "$baseline" != "$data" ]; then
         echo "        Failed - the server data differs to the baseline data!"
