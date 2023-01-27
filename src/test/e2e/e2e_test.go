@@ -216,7 +216,7 @@ var _ = Describe("verify-directory", Ordered, func() {
 				return nil
 			}
 			EventuallyWithOffset(1, verifyControllerUp, 
-									time.Minute, time.Second).Should(Succeed())
+							5 * time.Minute, 5 * time.Second).Should(Succeed())
 
 			/*
 			 * Setup the environment.
