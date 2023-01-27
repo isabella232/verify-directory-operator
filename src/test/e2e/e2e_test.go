@@ -159,7 +159,7 @@ var _ = Describe("verify-directory", Ordered, func() {
 
 			By("Deploying the operator controller.")
 			cmd = exec.Command("make", "deploy")
-			outputMake, err := utils.Run(cmd)
+			_, err := utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			/*
