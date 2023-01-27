@@ -116,6 +116,9 @@ jobs:
 
       # Perform the build.
       - name: Perform the build.
+        env: 
+          LICENSE_KEY: ${{ secrets.LICENSE_KEY}}
+          USE_KIND: 1
         run: |
           cd src
 
@@ -151,6 +154,9 @@ jobs:
 
           echo "running the scorecard test...."
           operator-sdk scorecard bundle -w 300s
+
+          echo "running the e2e tests...."
+          make test-e2e
 
           if [ $DO_PUSH -eq 1 ] ; then
             ibmcloud cr login --client docker
