@@ -297,6 +297,7 @@ The `IBMSecurityVerifyDirectory` custom resource definition contains the followi
 |spec.pods.image.imagePullPolicy|The pull policy for the images.|'Always' if the latest label is specified, otherwise 'IfNotPresent'.|No
 |spec.pods.image.imagePullSecrets[]|A list of secrets which contain the credentials, used to access the images.| |No
 |spec.pods.proxy.pvc|The name of the pre-created PVC which will be used by the proxy to persist runtime data.  This is only really required if schema updates are being applied using LDAP modification operations.| |No
+|spec.pods.proxy.replicas|The number of replicas which will be created of the LDAP proxy.|1|No
 |spec.pods.configMap.proxy.name spec.pods.configMap.proxy.key|The name and key of the ConfigMap which contains the initial configuration data for the proxy.  This should include everything but the proxy.server-groups and proxy.suffixes entries.| |Yes
 |spec.pods.configMap.server.name spec.pods.configMap.server.key|The name and key of the ConfigMap which contains the configuration data for the server which is being managed/replicated.| |Yes
 |spec.pods.resources|The compute resources required by each pod.  Further information can be found at [https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/]().| |No
@@ -304,7 +305,7 @@ The `IBMSecurityVerifyDirectory` custom resource definition contains the followi
 |spec.pods.env[]|A list of environment variables to be added to the pods.  Further information can be found at [https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/]().| |No
 |spec.pods.serviceAccountName|The Kubernetes account which the pods will run as.|default|No
 
-
+Please note that if a modification of the LDAP schema is required, using LDAP modification operations, a PVC will also need to be specified for the proxy.  In addition to this, the number of proxy replicas should be scaled back to 1 while the LDAP schema modifications take place.  The number of proxy replicas can then be scaled back up again after the LDAP schema modifications have been completed.
 
 
 ### Creating a Service

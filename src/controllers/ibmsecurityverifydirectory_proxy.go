@@ -21,8 +21,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"time"
+	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-yaml/yaml"
 	"github.com/ibm-security/verify-directory-operator/utils"
@@ -85,16 +86,13 @@ func (r *IBMSecurityVerifyDirectoryReconciler) deployProxy(
 	}
 
 	/*
-	 * If the configuration as been updated we need to create/restart the
-	 * proxy.
+	 * We now want to create/restart the proxy.
 	 */
 
-	if updated {
-		err = r.createProxyDeployment(h, port)
+	err = r.createProxyDeployment(h, port, updated)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -481,25 +479,25 @@ func (r *IBMSecurityVerifyDirectoryReconciler) saveProxyConfig(
  */
 
 func (r *IBMSecurityVerifyDirectoryReconciler) createProxyDeployment(
-			h    *RequestHandle,
-			port int32) (err error) {
+			h       *RequestHandle,
+			port    int32,
+			updated bool) (err error) {
 
 	r.Log.V(1).Info("Entering a function", 
 				r.createLogParams(h, "Function", "createProxyDeployment",
-						"Port", port)...)
+						"Port", port, "Updated", updated)...)
 
 	name := utils.GetProxyDeploymentName(h.directory.Name)
 
 	/*
-	 * Check to see whether the pod already exists.  If it does we just
-	 * trigger a rolling restart, otherwise we create the pod.
+	 * Check to see whether the pod already exists.
 	 */
 
-	dep := &appsv1.Deployment{}
-	err  = r.Get(h.ctx, 
+	olddep := &appsv1.Deployment{}
+	err     = r.Get(h.ctx, 
 					types.NamespacedName{
 						Name:	   name,
-						Namespace: h.directory.Namespace }, dep)
+						Namespace: h.directory.Namespace }, olddep)
 
 	if err != nil && ! k8serrors.IsNotFound(err) {
  		r.Log.Error(err, "Failed to retrieve the pod information",
@@ -509,198 +507,233 @@ func (r *IBMSecurityVerifyDirectoryReconciler) createProxyDeployment(
 	}
 
 	r.Log.V(1).Info("Retrieved the existing proxy deployment details.", 
-				r.createLogParams(h, "Deployment", dep)...)
+				r.createLogParams(h, "Deployment", olddep)...)
 
-	if err == nil {
-		/*
-		 * The deployment already exists and so we just need to perform a 
-		 * rolling restart.
-		 */
+	/*
+	 * Construct the new pod definition.
+	 */
 
-		patch      := client.MergeFrom(dep.DeepCopy())
-		annotation := "kubectl.kubernetes.io/restartedAt"
-
-		if dep.Spec.Template.ObjectMeta.Annotations == nil {
-			dep.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
-		}
-
-		dep.Spec.Template.ObjectMeta.Annotations[annotation] = 
-							time.Now().Format("20060102150405")
-
-		r.Log.V(1).Info("Restarting the proxy deployment.", 
-				r.createLogParams(h, "Deployment", dep)...)
-
-		err = r.Patch(h.ctx, dep, patch)
-
-		if err != nil {
-			r.Log.Error(err, "Failed to restart the proxy deployment",
-				r.createLogParams(h, "Deployment.Name", name)...)
-
-			return
-		}
-	} else {
-		configMapName := utils.GetProxyConfigMapName(h.directory.Name)
+	configMapName := utils.GetProxyConfigMapName(h.directory.Name)
 	
-		/*
-		 * The pod does not yet exist and so we need to create the pod now.
-		 */
-
-		imageName := fmt.Sprintf("%s/verify-directory-proxy:%s", 
+	imageName := fmt.Sprintf("%s/verify-directory-proxy:%s", 
 					h.directory.Spec.Pods.Image.Repo, 
 					h.directory.Spec.Pods.Image.Label)
 
-		/*
-		 * The port which is exported by the deployment.
-		 */
+	/*
+	 * The port which is exported by the deployment.
+	 */
 
-		ports := []corev1.ContainerPort {{
-			Name:          "ldap",
-			ContainerPort: port,
-			Protocol:      corev1.ProtocolTCP,
-		}}
+	ports := []corev1.ContainerPort {{
+		Name:          "ldap",
+		ContainerPort: port,
+		Protocol:      corev1.ProtocolTCP,
+	}}
 
-		/*
-		 * The volume configuration.
-		 */
+	/*
+	 * The volume configuration.
+	 */
 
-		volumes := []corev1.Volume {
-			{
-				Name: "isvd-proxy-config",
-				VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: configMapName,
-						},
-						Items: []corev1.KeyToPath{{
-							Key:  utils.ProxyCMKey,
-							Path: utils.ProxyCMKey,
-						}},
+	volumes := []corev1.Volume {
+		{
+			Name: "isvd-proxy-config",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: configMapName,
 					},
+					Items: []corev1.KeyToPath{{
+						Key:  utils.ProxyCMKey,
+						Path: utils.ProxyCMKey,
+					}},
 				},
 			},
-		}
+		},
+	}
 
-		volumeMounts := []corev1.VolumeMount {
-			{
-				Name:      "isvd-proxy-config",
-				MountPath: "/var/isvd/config",
-			},
-		}
+	volumeMounts := []corev1.VolumeMount {
+		{
+			Name:      "isvd-proxy-config",
+			MountPath: "/var/isvd/config",
+		},
+	}
 
-		/*
-		 * Check to see if a proxy PVC has been specified.  If one has been
-		 * specified we need to add this PVC to the deployment.
-		 */
+	/*
+	 * Check to see if a proxy PVC has been specified.  If one has been
+	 * specified we need to add this PVC to the deployment.
+	 */
 
-		if h.directory.Spec.Pods.Proxy.PVC != "" {
-			volumes = append(volumes, corev1.Volume {
-				Name: "isvd-proxy-data",
-				VolumeSource: corev1.VolumeSource{
-					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-						ClaimName: h.directory.Spec.Pods.Proxy.PVC,
-						ReadOnly:  false,
-					},
-				},
-			})
-
-			volumeMounts = append(volumeMounts, corev1.VolumeMount {
-				Name:      "isvd-proxy-data",
-				MountPath: "/var/isvd/data",
-			})
-		}
-
-		/*
-		 * Set up the environment variables.
-		 */
-
-		env := append(h.directory.Spec.Pods.Env, 
-			corev1.EnvVar {
-				Name: "YAML_CONFIG_FILE",
-				Value: fmt.Sprintf("/var/isvd/config/%s", utils.ProxyCMKey),
-			},
-		)
-
-		/*
-		 * The liveness, and readiness probe definitions.
-		 */
-
-		livenessProbe := &corev1.Probe {
-			InitialDelaySeconds: 2,
-			PeriodSeconds:       10,
-			ProbeHandler:        corev1.ProbeHandler {
-				Exec: &corev1.ExecAction {
-					Command: []string{
-						"/sbin/health_check.sh",
-						"livenessProbe",
-					},
+	if h.directory.Spec.Pods.Proxy.PVC != "" {
+		volumes = append(volumes, corev1.Volume {
+			Name: "isvd-proxy-data",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: h.directory.Spec.Pods.Proxy.PVC,
+					ReadOnly:  false,
 				},
 			},
-		}
+		})
 
-		readinessProbe := &corev1.Probe {
-			InitialDelaySeconds: 4,
-			PeriodSeconds:       5,
-			ProbeHandler:        corev1.ProbeHandler {
-				Exec: &corev1.ExecAction {
-					Command: []string{
-						"/sbin/health_check.sh",
-					},
+		volumeMounts = append(volumeMounts, corev1.VolumeMount {
+			Name:      "isvd-proxy-data",
+			MountPath: "/var/isvd/data",
+		})
+	}
+
+	/*
+	 * Set up the environment variables.
+	 */
+
+	env := append(h.directory.Spec.Pods.Env, 
+		corev1.EnvVar {
+			Name: "YAML_CONFIG_FILE",
+			Value: fmt.Sprintf("/var/isvd/config/%s", utils.ProxyCMKey),
+		},
+	)
+
+	/*
+	 * The liveness, and readiness probe definitions.
+	 */
+
+	livenessProbe := &corev1.Probe {
+		InitialDelaySeconds: 2,
+		PeriodSeconds:       10,
+		ProbeHandler:        corev1.ProbeHandler {
+			Exec: &corev1.ExecAction {
+				Command: []string{
+					"/sbin/health_check.sh",
+					"livenessProbe",
 				},
 			},
-		}
+		},
+	}
 
-		/*
-		 * Set the labels for the pod.
-		 */
-
-		labels := map[string]string{
-			"app.kubernetes.io/kind":    "IBMSecurityVerifyDirectory",
-			"app.kubernetes.io/cr-name": name,
-		}
-
-		/*
-		 * Finalise the deployment definition.
-		 */
-
-		var replicas int32 = 1
-
-		dep := &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: h.directory.Namespace,
-				Labels:    utils.LabelsForApp(h.directory.Name, name),
-			},
-	 		Spec: appsv1.DeploymentSpec{
-				Replicas: &replicas,
-				Selector: &metav1.LabelSelector{
-					MatchLabels: labels,
-				},
-				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: labels,
-					},
-					Spec: corev1.PodSpec{
-						Volumes:            volumes,
-						ImagePullSecrets:   h.directory.Spec.Pods.Image.ImagePullSecrets,
-						ServiceAccountName: h.directory.Spec.Pods.ServiceAccountName,
-						Hostname:           name,
-						Containers:         []corev1.Container{{
-							Env:             env,
-							EnvFrom:         h.directory.Spec.Pods.EnvFrom,
-							Image:           imageName,
-							ImagePullPolicy: h.directory.Spec.Pods.Image.ImagePullPolicy,
-							LivenessProbe:   livenessProbe,
-							Name:            name,
-							Ports:           ports,
-							ReadinessProbe:  readinessProbe,
-							Resources:       h.directory.Spec.Pods.Resources,
-							VolumeMounts:    volumeMounts,
-						}},
-					},
+	readinessProbe := &corev1.Probe {
+		InitialDelaySeconds: 4,
+		PeriodSeconds:       5,
+		ProbeHandler:        corev1.ProbeHandler {
+			Exec: &corev1.ExecAction {
+				Command: []string{
+					"/sbin/health_check.sh",
 				},
 			},
+		},
+	}
+
+	/*
+	 * Set the labels for the pod.
+	 */
+
+	labels := map[string]string{
+		"app.kubernetes.io/kind":    "IBMSecurityVerifyDirectory",
+		"app.kubernetes.io/cr-name": name,
+	}
+
+	/*
+	 * Finalise the deployment definition.
+	 */
+
+	var replicas int32 = 1
+
+	if h.directory.Spec.Pods.Proxy.Replicas > 0 {
+		replicas = h.directory.Spec.Pods.Proxy.Replicas
+	}
+
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: h.directory.Namespace,
+			Labels:    utils.LabelsForApp(h.directory.Name, name),
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					Volumes:            volumes,
+					ImagePullSecrets:   h.directory.Spec.Pods.Image.ImagePullSecrets,
+					ServiceAccountName: h.directory.Spec.Pods.ServiceAccountName,
+					Hostname:           name,
+					Containers:         []corev1.Container{{
+						Env:             env,
+						EnvFrom:         h.directory.Spec.Pods.EnvFrom,
+						Image:           imageName,
+						ImagePullPolicy: h.directory.Spec.Pods.Image.ImagePullPolicy,
+						LivenessProbe:   livenessProbe,
+						Name:            name,
+						Ports:           ports,
+						ReadinessProbe:  readinessProbe,
+						Resources:       h.directory.Spec.Pods.Resources,
+						VolumeMounts:    volumeMounts,
+					}},
+				},
+			},
+		},
+	}
+
+	/*
+	 * Create or restart the deployment.
+	 */
+
+	if err == nil {
+		if ! reflect.DeepEqual(olddep.Spec, dep.Spec) {
+			/*
+			 * The deployment already exists, but the pod specification has
+			 * changed.  We want to update the pod now.
+			 */
+
+			ctrl.SetControllerReference(h.directory, dep, r.Scheme)
+
+			r.Log.Info("Updating a proxy deployment", 
+						r.createLogParams(h, "Deployment.Name", dep.Name)...)
+
+			r.Log.V(1).Info("Proxy deployment details.", 
+				r.createLogParams(h, "Deployment", dep)...)
+
+			err = r.Update(h.ctx, dep)
+
+			if err != nil {
+				r.Log.Error(err, "Failed to update the proxy deployment",
+						r.createLogParams(h, "Deployment.Name", dep.Name)...)
+
+				return 
+			}
 		}
 
+		if updated {
+			/*
+			 * The deployment already exists and so we just need to perform a 
+			 * rolling restart.
+			 */
+
+			patch      := client.MergeFrom(dep.DeepCopy())
+			annotation := "kubectl.kubernetes.io/restartedAt"
+
+			if dep.Spec.Template.ObjectMeta.Annotations == nil {
+				dep.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+			}
+
+			dep.Spec.Template.ObjectMeta.Annotations[annotation] = 
+							time.Now().Format("20060102150405")
+
+			r.Log.V(1).Info("Restarting the proxy deployment.", 
+				r.createLogParams(h, "Deployment", dep)...)
+
+			err = r.Patch(h.ctx, dep, patch)
+
+			if err != nil {
+				r.Log.Error(err, "Failed to restart the proxy deployment",
+					r.createLogParams(h, "Deployment.Name", name)...)
+
+				return
+			}
+		}
+
+	} else {
 		/*
 		 * Create the deployment.
 		 */

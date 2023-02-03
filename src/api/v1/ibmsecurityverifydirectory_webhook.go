@@ -538,6 +538,28 @@ func (r *IBMSecurityVerifyDirectory) validateDocumentState() (err error) {
 /*****************************************************************************/
 
 /*
+ * This function will compare the two specified elements and return an error
+ * if they are not identical.
+ */
+
+func (r *IBMSecurityVerifyDirectory) compareElements(
+		valueA interface{},
+		valueB interface{},
+		name   string) (err error) {
+
+	if ! reflect.DeepEqual(valueA, valueB) {
+		err = errors.New(
+			fmt.Sprintf("The spec.pods.%s entry has been changed.  If you " +
+				"need to modify spec.pods.%s you must first delete the " +
+				"document and then recreate it.", name, name))
+	}
+
+	return err
+}
+
+/*****************************************************************************/
+
+/*
  * This function will check to ensure that only valid fields have been updated 
  * in the document.  We essentially want to ensure that none of the pod
  * configuration has been updated.
@@ -549,14 +571,47 @@ func (r *IBMSecurityVerifyDirectory) validateDocumentUpdates(
 	logger.V(1).Info("Entering a function", 
 		r.createLogParams("Function", "validateDocumentUpdates")...)
 
-	if ! reflect.DeepEqual(r.Spec.Pods, old.Spec.Pods) {
-		return errors.New(
-			"The pod.specs entry has been changed.  If you need to modify " +
-			"pod.specs you must first delete the document and then recreate " +
-			"it.")
+	err = r.compareElements(r.Spec.Pods.Image, old.Spec.Pods.Image, "Image")
+
+	if err != nil {
+		return
 	}
 
-	return nil
+	err = r.compareElements(
+				r.Spec.Pods.ConfigMap, old.Spec.Pods.ConfigMap, "ConfigMap")
+
+	if err != nil {
+		return
+	}
+
+	err = r.compareElements(
+				r.Spec.Pods.Resources, old.Spec.Pods.Resources, "Resources")
+
+	if err != nil {
+		return
+	}
+
+	err = r.compareElements(
+				r.Spec.Pods.EnvFrom, old.Spec.Pods.EnvFrom, "EnvFrom")
+
+	if err != nil {
+		return
+	}
+
+	err = r.compareElements(r.Spec.Pods.Env, old.Spec.Pods.Env, "Env")
+
+	if err != nil {
+		return
+	}
+
+	err = r.compareElements(r.Spec.Pods.ServiceAccountName, 
+				old.Spec.Pods.ServiceAccountName, "ServiceAccountName")
+
+	if err != nil {
+		return
+	}
+
+	return 
 }
 
 /*****************************************************************************/

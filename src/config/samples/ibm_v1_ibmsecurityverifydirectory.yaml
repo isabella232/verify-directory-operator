@@ -23,5 +23,8 @@ spec:
         name: isvd-server-config
         key:  config.yaml
 
-    serviceAccountName: isvd 
+    serviceAccountName: isvd
+
+    proxy:
+      replicas: 2
 

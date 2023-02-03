@@ -148,7 +148,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 					r.createLogParams(&h)...)
 		}
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	r.Log.V(1).Info("Reconciling a document", 
@@ -174,7 +174,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.setCondition(err, &h,
 							"Failed to retrieve the list of existing pods.")
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	r.Log.Info("Existing pods", r.createLogParams(&h, "Pods", existing)...)
@@ -190,10 +190,6 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.createLogParams(&h, 
 			"to be deleted", toBeDeleted,
 			"to be added", toBeAdded)...)
-
-	if len(toBeDeleted) == 0 && len(toBeAdded) == 0 {
-		return ctrl.Result{}, nil
-	}
 
 	/*
 	 * Mark the deployment as in-progress.
@@ -212,7 +208,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 		r.Log.Error(err, "Failed to update the condition for the resource",
 						r.createLogParams(&h)...)
 	
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	/*
@@ -223,22 +219,24 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 
 	if err != nil {
 		r.setCondition(err, &h,
-			"Failed to obtain the server information from the ConfigMap.")
+				"Failed to obtain the server information from the ConfigMap.")
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
-	/*
-	 * Create the new replicas.
-	 */
+	if len(toBeDeleted) != 0 || len(toBeAdded) != 0 {
+		/*
+		 * Create the new replicas.
+		 */
 
-	existing, err = r.createReplicas(&h, existing, toBeAdded)
+		existing, err = r.createReplicas(&h, existing, toBeAdded)
 
-	if err != nil {
-		r.setCondition(err, &h,
+		if err != nil {
+			r.setCondition(err, &h,
 					"Failed to create the new replicas.")
 
-		return ctrl.Result{}, err
+			return ctrl.Result{}, nil
+		}
 	}
 
 	/*
@@ -251,7 +249,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 	if err != nil {
 		r.setCondition(err, &h, "Failed to deploy the proxy.")
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	/*
@@ -263,7 +261,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 	if err != nil {
 		r.setCondition(err, &h, "Failed to delete the obsolete replicas.")
 
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	/*
@@ -274,7 +272,7 @@ func (r *IBMSecurityVerifyDirectoryReconciler) Reconcile(
 
 	r.setCondition(err, &h, "")
 
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil
 }
 
 /*****************************************************************************/

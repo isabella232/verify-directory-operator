@@ -61,6 +61,11 @@ type IBMSecurityVerifyDirectoryProxy struct {
 	// The name of the PVC which will be used by the proxy.
 	// +optional
 	PVC string `json:"pvc"`
+
+	//+kubebuilder:default=1
+	// The number of proxy replicas to create.
+	// +optional
+	Replicas int32 `json:"replicas"`
 }
 
 // for a ConfigMap configuration.
