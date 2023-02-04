@@ -26,5 +26,5 @@ spec:
     serviceAccountName: isvd
 
     proxy:
-      replicas: 2
+      replicas: 1
 
