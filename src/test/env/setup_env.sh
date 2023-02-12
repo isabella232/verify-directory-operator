@@ -59,7 +59,11 @@ elif [ "$1" = "init" ] ; then
 
     # Check the command line.
     if [ $# != 2 ] ; then
-        usage
+        if [ -z "$LICENSE_KEY" ]; then
+            usage
+        fi
+    else
+        LICENSE_KEY=$2
     fi
 
     # Create the NFS server.
@@ -84,7 +88,7 @@ elif [ "$1" = "init" ] ; then
 
     # Create the secret.
     echo "Creating the secret..."
-    $root/create-secret.sh $2
+    $root/create-secret.sh $LICENSE_KEY
 
     # Process each of the YAML files.
     for yaml in $yaml_files; do
