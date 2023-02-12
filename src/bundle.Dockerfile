@@ -18,7 +18,7 @@ LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
 LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
 
 # Labels for openshift certification.
-LABEL com.redhat.openshift.versions="v4.7"
+LABEL com.redhat.openshift.versions="v4.9"
 LABEL com.redhat.delivery.operator.bundle=true
 LABEL com.redhat.deliver.backport=true
 

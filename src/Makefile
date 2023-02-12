@@ -221,7 +221,7 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | sed "s|0000.0000.0000|$(VERSION)|g" | sed "s|--date--|`date`|g" | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
 	sed -i '/ibmsecurityverifydirectories.ibm.com/ r config/manifests/bases/ibm-security-verify-directory-operator.clusterserviceversion.yaml.annotations' bundle/manifests/ibm-security-verify-directory-operator.clusterserviceversion.yaml
-	echo "  com.redhat.openshift.versions: \"v4.7\"" >> bundle/metadata/annotations.yaml
+	echo "  com.redhat.openshift.versions: \"v4.9\"" >> bundle/metadata/annotations.yaml
 	operator-sdk bundle validate ./bundle
 
 .PHONY: bundle-build
